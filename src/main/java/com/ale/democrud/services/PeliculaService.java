@@ -1,10 +1,10 @@
 package com.ale.democrud.services;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import com.ale.democrud.models.Pelicula;
 import com.ale.democrud.repository.PeliculaRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,8 +12,15 @@ import java.util.Optional;
 @Service
 public class PeliculaService {
 
-    @Autowired
-    private PeliculaRepository peliculaRepository;
+    private final PeliculaRepository peliculaRepository;
+
+    public PeliculaService(PeliculaRepository peliculaRepository) {
+        this.peliculaRepository = peliculaRepository;
+    }
+
+    public Page<Pelicula> listarPaginado(Pageable pageable) {
+        return peliculaRepository.findAll(pageable);
+    }
 
     public List<Pelicula> listarTodas() {
         return peliculaRepository.findAll();
