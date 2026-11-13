@@ -13,7 +13,7 @@ public class PeliculaRequestDTO {
     private String genero;
 
     @NotNull(message = "El año es obligatorio")
-    @Min(value = 1888, message = "El año debe ser mayor o igual a 1888")
+    @Min(value = 1700, message = "El año debe ser mayor o igual a 1700")
     private Integer anio;
 
     @NotNull(message = "El ID del director (directorId) es obligatorio")

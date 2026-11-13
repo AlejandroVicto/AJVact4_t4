@@ -41,7 +41,7 @@ public class PeliculaRestController {
                 p.getDirector().getNacionalidad());
     }
 
-    // a) GET para listar con paginación: /api/peliculas?page=0&size=5
+    // a) GET para listar con paginación
     @GetMapping("/peliculas")
     public ResponseEntity<Page<PeliculaResponseDTO>> listarPeliculas(
             @RequestParam(defaultValue = "0") int page,
@@ -62,7 +62,7 @@ public class PeliculaRestController {
         return ResponseEntity.ok(toDTO(peliculaOpt.get()));
     }
 
-    // b) POST para crear con DTO y @Valid (Devuelve 201 Created)
+    // b) POST para crear con DTO y @Valid
     @PostMapping("/peliculas")
     public ResponseEntity<?> crearPelicula(@Valid @RequestBody PeliculaRequestDTO dto) {
         Optional<Director> directorOpt = directorService.obtenerPorId(dto.getDirectorId());
@@ -81,7 +81,7 @@ public class PeliculaRestController {
         return ResponseEntity.status(HttpStatus.CREATED).body(toDTO(guardada));
     }
 
-    // c) PUT para actualizar con DTO y @Valid (Devuelve 200 OK o 404 Not Found)
+    // c) PUT para actualizar con DTO y @Valid
     @PutMapping("/peliculas/{id}")
     public ResponseEntity<?> actualizarPelicula(@PathVariable Long id, @Valid @RequestBody PeliculaRequestDTO dto) {
         Optional<Pelicula> existenteOpt = peliculaService.obtenerPorId(id);
@@ -106,7 +106,7 @@ public class PeliculaRestController {
         return ResponseEntity.ok(toDTO(actualizada));
     }
 
-    // d) DELETE para eliminar (Devuelve 200 OK con mensaje o 404 Not Found)
+    // d) DELETE para eliminar
     @DeleteMapping("/peliculas/{id}")
     public ResponseEntity<?> eliminarPelicula(@PathVariable Long id) {
         if (peliculaService.obtenerPorId(id).isEmpty()) {
@@ -117,7 +117,6 @@ public class PeliculaRestController {
         return ResponseEntity.ok(Map.of("mensaje", "Película eliminada correctamente"));
     }
 
-    // Endpoints auxiliares de Directores
     @GetMapping("/directores")
     public ResponseEntity<List<Director>> listarDirectores() {
         return ResponseEntity.ok(directorService.listarTodos());

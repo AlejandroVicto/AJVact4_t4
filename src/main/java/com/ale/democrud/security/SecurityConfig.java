@@ -34,7 +34,7 @@ public class SecurityConfig {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType("application/json");
                             response.getWriter().write(
-                                    "{\"error\": \"No autorizado. Debe enviar un token JWT valido en el header Authorization: Bearer <token>\"}");
+                                    "{\"error\": \"No autorizado. Debe enviar un token JWT valido en el header Authorization Cabezon\"}");
                         }))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
