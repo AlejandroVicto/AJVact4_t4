@@ -1,0 +1,15 @@
+meta {
+  name: 6-Listar-Peliculas-Paginado
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/peliculas?page=0&size=5
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

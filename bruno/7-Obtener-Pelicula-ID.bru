@@ -1,0 +1,15 @@
+meta {
+  name: 7-Obtener-Pelicula-ID
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/peliculas/1
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

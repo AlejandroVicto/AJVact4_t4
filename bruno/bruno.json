@@ -1,0 +1,6 @@
+{
+  "version": "1",
+  "name": "Actividad4_API_JWT",
+  "type": "collection",
+  "ignore": ["node_modules", ".git"]
+}

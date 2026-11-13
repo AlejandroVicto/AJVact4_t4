@@ -1,161 +1,206 @@
-# Catálogo de Cine — CRUD con Spring Boot, JPA y PostgreSQL
+# Actividad 4 — API REST con Spring Boot, Spring Security y JWT
 
-Aplicación web y API REST desarrollada con **Spring Boot**, **Spring Data JPA**, **Thymeleaf** y **PostgreSQL** para gestionar un catálogo de **Películas** y **Directores** mediante una relación uno a muchos (`@OneToMany` / `@ManyToOne`).
 
----
+**Repositorio:** `AJVact4_t4`  
+**Autor:** Alejandro Victoriano (`AJV`)  
+**Asignatura:** Programacion Web
+**Tema:** API REST pura con autenticación real basada en JWT
 
-## Tecnologías Utilizadas
-
-- **Java 21**
-- **Spring Boot 4.1.2** 
-- **PostgreSQL** 
-- **Bootstrap 5.3.2** 
-- **Maven** 
 
 ---
 
-## Entidades Relacionadas
+## Tecnologías y Herramientas
 
-El proyecto implementa dos entidades JPA relacionadas entre sí:
-
-1. **`Director`** (`tabla: directores`)
-   - `id` (`Long`, llave primaria autoincremental)
-   - `nombre` (`String`)
-   - `nacionalidad` (`String`)
-   - `peliculas` (`List<Pelicula>`, relación `@OneToMany(mappedBy = "director", cascade = CascadeType.ALL)`)
-
-2. **`Pelicula`** (`tabla: peliculas`)
-   - `id` (`Long`, llave primaria autoincremental)
-   - `titulo` (`String`)
-   - `genero` (`String`)
-   - `anio` (`Integer`)
-   - `director` (`Director`, relación `@ManyToOne` con llave foránea `@JoinColumn(name = "director_id")`)
-
-```mermaid
-erDiagram
-    DIRECTORES ||--o{ PELICULAS : "dirige (1:N)"
-    DIRECTORES {
-        Long id PK
-        String nombre
-        String nacionalidad
-    }
-    PELICULAS {
-        Long id PK
-        String titulo
-        String genero
-        Integer anio
-        Long director_id FK
-    }
-```
+| Componente | Tecnología / Versión | Descripción |
+| :--- | :--- | :--- |
+| **Lenguaje** | Java 21 LTS | Plataforma base de desarrollo |
+| **Framework** | Spring Boot 3.4.1 | Framework principal para la construcción del backend |
+| **Seguridad** | Spring Security 6 | Filtros de seguridad, encriptación BCrypt y arquitectura Stateless |
+| **Tokens** | JJWT (io.jsonwebtoken) 0.12.6 | Generación, firmado HMAC-SHA256 y validación de tokens JWT |
+| **Validación** | Hibernate Validator (`jakarta.validation`) | Validación declarativa de DTOs de entrada con `@Valid` |
+| **Base de Datos** | PostgreSQL 16 | Almacenamiento relacional de usuarios, directores y películas |
+| **Pruebas API** | Bruno (`bruno.io`) | Cliente API de código abierto con colecciones versionadas |
 
 ---
 
-## Estructura del Proyecto
+## Arquitectura y Estructura del Proyecto
+
+El proyecto sigue una arquitectura en capas desacoplada y modular:
 
 ```text
 src/main/java/com/ale/democrud/
 ├── DemocrudApplication.java
 ├── controllers/
-│   ├── PeliculaController.java      
-│   └── PeliculaRestController.java  
+│   ├── AuthController.java
+│   ├── GlobalExceptionHandler.java
+│   └── PeliculaRestController.java
+├── dtos/
+│   ├── AuthResponseDTO.java
+│   ├── LoginRequestDTO.java
+│   ├── PeliculaRequestDTO.java
+│   ├── PeliculaResponseDTO.java
+│   └── RegisterRequestDTO.java
 ├── models/
-│   ├── Director.java                
-│   └── Pelicula.java                
+│   ├── Director.java
+│   ├── Pelicula.java
+│   └── Usuario.java
 ├── repository/
 │   ├── DirectorRepository.java
-│   └── PeliculaRepository.java
+│   ├── PeliculaRepository.java
+│   └── UsuarioRepository.java
+├── security/
+│   ├── JwtAuthenticationFilter.java
+│   ├── JwtService.java
+│   └── SecurityConfig.java
 └── services/
     ├── DirectorService.java
     └── PeliculaService.java
 
 src/main/resources/
-├── application.properties           
-└── templates/
-    ├── index.html                   
-    └── form.html                    
+└── application.properties
 ```
 
----
 
+## Catálogo de Endpoints de la API REST
 
-## Rutas Disponibles
+### 1. Autenticación (`/api/auth`)
 
-### Vistas Web (`PeliculaController`)
+| Método | Endpoint | Acceso | Código HTTP | Descripción |
+| :---: | :--- | :---: | :---: | :--- |
+| `POST` | `/api/auth/register` | Público | `201 Created` / `400 Bad Request` | Registra un usuario y retorna su token JWT inicial. |
+| `POST` | `/api/auth/login` | Público | `200 OK` / `401 Unauthorized` | Autentica credenciales y retorna un token JWT válido. |
 
-| Método | Ruta | Descripción |
-| :--- | :--- | :--- |
-| `GET` | `/` | Muestra el catálogo de películas, la lista de directores y el formulario para agregar un director (`index.html`). |
-| `GET` | `/nuevo` | Muestra el formulario para registrar una nueva película (`form.html`). |
-| `POST` | `/guardar` | Guarda una película nueva o actualiza una existente y redirige a `/`. |
-| `POST` | `/directores/guardar` | Guarda un nuevo director y redirige a `/`. |
-| `GET` | `/editar/{id}` | Carga los datos de la película seleccionada en `form.html`. |
-| `GET` | `/eliminar/{id}` | Elimina la película por su ID y redirige a `/`. |
+### 2. Catálogo de Películas — CRUD Protegido (`/api/peliculas`)
 
-### API REST (`PeliculaRestController` — `/api`)
+*Todos estos endpoints requieren cabecera `Authorization: Bearer <token>`.*
 
-| Método | Endpoint | Descripción |
-| :--- | :--- | :--- |
-| `GET` | `/api/peliculas` | Lista todas las películas incluyendo el objeto `director` completo. |
-| `GET` | `/api/peliculas/{id}` | Consulta una película por ID junto con la información de su director. |
-| `POST` | `/api/peliculas` | Crea una nueva película asociada a un `director.id`. |
-| `PUT` | `/api/peliculas/{id}` | Actualiza una película existente y su director. |
-| `DELETE` | `/api/peliculas/{id}` | Elimina una película por ID. |
-| `GET` | `/api/directores` | Lista todos los directores registrados. |
-| `POST` | `/api/directores` | Registra un nuevo director. |
+| Método | Endpoint | Parámetros / Body | Código HTTP | Descripción |
+| :---: | :--- | :--- | :---: | :--- |
+| `GET` | `/api/peliculas` | `?page=0&size=5` (Query Params) | `200 OK` / `401 Unauthorized` | Lista películas con **paginación** usando `Pageable`. |
+| `GET` | `/api/peliculas/{id}` | `id` (Path Variable) | `200 OK` / `404 Not Found` | Obtiene el detalle individual de una película por su ID. |
+| `POST` | `/api/peliculas` | `PeliculaRequestDTO` (JSON) | `201 Created` / `400 Bad Request` | Crea una nueva película validada con `@Valid`. |
+| `PUT` | `/api/peliculas/{id}` | `id` + `PeliculaRequestDTO` | `200 OK` / `400 Bad Request` / `404` | Actualiza los datos de una película existente. |
+| `DELETE` | `/api/peliculas/{id}` | `id` (Path Variable) | `200 OK` / `404 Not Found` | Elimina una película por su ID. |
+| `GET` | `/api/directores` | Ninguno | `200 OK` / `401 Unauthorized` | Lista los directores registrados. |
+| `POST` | `/api/directores` | `Director` (JSON) | `201 Created` / `401 Unauthorized` | Registra un nuevo director. |
 
 ---
 
-## CRUD y Relación Funcionando
+## Evidencias de Pruebas con Bruno
 
-### 1. Relación Reflejada Correctamente (`Pelicula` → `Director`)
+> [!NOTE]
+> Las pruebas fueron ejecutadas con el cliente **Bruno** (`bruno.io`). Las 9 capturas de la carpeta `screenshots/` corresponden, en orden, a la ejecución de los 9 archivos `.bru` de la carpeta `bruno/`: registro, login, prueba sin token y las operaciones del CRUD.
 
-Al consultar las películas en la vista principal (`/`) o mediante el endpoint `GET /api/peliculas`, no se muestra únicamente el `director_id`, sino los datos completos de la entidad relacionada: el **nombre del director** y su **nacionalidad**. De igual forma, en el formulario `form.html`, la selección de director se realiza mediante una lista desplegable con los nombres y nacionalidades de los directores registrados.
+| # | Archivo Bruno | Petición | Captura |
+| :---: | :--- | :--- | :--- |
+| 1 | `1-Registro.bru` | `POST /api/auth/register` | `01-registro.png` |
+| 2 | `2-Login.bru` | `POST /api/auth/login` | `02-login.png` |
+| 3 | `3-Prueba-Sin-Token-401.bru` | `GET /api/peliculas` sin token | `03-No token.png` |
+| 4 | `4-Crear-Director.bru` | `POST /api/directores` | `04-crear_director.png` |
+| 5 | `5-Crear-Pelicula.bru` | `POST /api/peliculas` | `05-Crear_pelicula.png` |
+| 6 | `6-Listar-Peliculas-Paginado.bru` | `GET /api/peliculas?page=0&size=5` | `06-listarPeliPaginado.png` |
+| 7 | `7-Obtener-Pelicula-ID.bru` | `GET /api/peliculas/1` | `07-ObtenerPorID.png` |
+| 8 | `8-Actualizar-Pelicula.bru` | `PUT /api/peliculas/1` | `08-actualizarPeli.png` |
+| 9 | `9-Eliminar-Pelicula.bru` | `DELETE /api/peliculas/1` | `09-eliminarPeli.png` |
 
-> **[Relación reflejada correctamente (mostrando el nombre y nacionalidad del Director junto a cada Película, en la web y/o respuesta JSON de `/api/peliculas`)]**
+### 1. Registro de usuario (`POST /api/auth/register`)
+
+Registro de una nueva cuenta mediante `RegisterRequestDTO`. La API cifra la contraseña con BCrypt y devuelve `201 Created` con el token JWT generado en `AuthResponseDTO`, sin exponer la contraseña.
+
+> **[Captura: Registro exitoso con respuesta HTTP 201 Created y token JWT generado]**
 >
-> ![Relación reflejada](screenshots/02-relacion-pelicula-director.png)
-> ![Relación reflejada en form](screenshots/02-relacion-pelicula-director-form.png)
+> ![Registro de usuario](screenshots/01-registro.png)
 
 ---
 
-### 2. Operación CREAR (Create)
+### 2. Inicio de sesión (`POST /api/auth/login`)
 
-Registro de un nuevo **Director** desde la vista principal (`POST /directores/guardar`) y creación de una nueva **Película** mediante `form.html` (`POST /guardar`), seleccionando al director desde la llave foránea.
+Autenticación con email y contraseña válidos. La API verifica el hash con BCrypt y retorna `200 OK` con el token JWT firmado, que se usará como Bearer Token en las peticiones protegidas.
 
-> **[Creación de un nuevo Director y/o formulario de Nueva Película]**
+> **[Captura: Login exitoso con respuesta HTTP 200 OK y token JWT retornado]**
 >
-> ![Operación Crear](screenshots/03-crud-crear.png)
-> ![Operación Crear Director](screenshots/03-crud-crear-director.png)
+> ![Login](screenshots/02-login.png)
 
 ---
 
-### 3. Operación LEER (Read)
+### 3. Endpoint protegido sin token (`GET /api/peliculas`)
 
-Visualización de los registros almacenados en PostgreSQL desde `index.html` (`GET /`) o mediante consulta a la API REST (`GET /api/peliculas` / `GET /api/peliculas/{id}`), mostrando los nuevos registros creados.
+Petición al CRUD sin enviar la cabecera `Authorization`. La API rechaza la solicitud con `401 Unauthorized`, confirmando que los endpoints están protegidos.
 
-> **[Listado de películas y directores funcionando (operación Leer)]**
+> **[Captura: Petición sin token rechazada con HTTP 401 Unauthorized]**
 >
-> ![Operación Leer](screenshots/04-crud-leer.png)
-> ![Operación Leer Rest](screenshots/04-crud-leer-rest.png)
+> ![Prueba sin token](screenshots/03-No%20token.png)
 
 ---
 
-### 4. Operación ACTUALIZAR (Update)
+### 4. Crear director (`POST /api/directores`)
 
-Edición de una película existente desde `/editar/{id}` (`form.html`) o vía `PUT /api/peliculas/{id}`, modificando sus campos (título, género, año o director asignado) y comprobando el cambio en el listado.
+Petición protegida con `Authorization: Bearer <token>`. Se registra un director para poder asociarlo posteriormente a una película. Retorna `201 Created`.
 
-> **[Formulario de edición y registro actualizado en la tabla]**
+> **[Captura: Creación de director con Bearer Token retornando HTTP 201 Created]**
 >
-> ![Operación Actualizar](screenshots/05-crud-actualizar.png)
-> ![Operación Actualizar Rest](screenshots/05-crud-actualizar-rest.png)
+> ![Crear director](screenshots/04-crear_director.png)
 
 ---
 
-### 5. Operación ELIMINAR (Delete)
+### 5. Crear película (`POST /api/peliculas`)
 
-Eliminación de una película desde el botón **Eliminar** (`/eliminar/{id}`, con diálogo de confirmación) o mediante `DELETE /api/peliculas/{id}`, verificando que el registro desaparece del catálogo y de la base de datos.
+Petición protegida con el Bearer Token y el cuerpo validado mediante `PeliculaRequestDTO`. Devuelve `201 Created` con los datos de la película y su director mapeados a `PeliculaResponseDTO`.
 
-> **[Confirmación de eliminación y tabla actualizada tras eliminar]**
+> **[Captura: Creación de película con Bearer Token retornando HTTP 201 Created]**
 >
-> ![Operación Eliminar](screenshots/06-crud-eliminar.png)
-> ![Operación Eliminar Rest](screenshots/06-crud-eliminar-rest.png)
+> ![Crear película](screenshots/05-Crear_pelicula.png)
+
+---
+
+### 6. Listar películas con paginación (`GET /api/peliculas?page=0&size=5`)
+
+Consulta protegida con el Bearer Token y los parámetros de paginación `page` y `size`. Retorna `200 OK` con el objeto `Page`, incluyendo la lista de películas y los datos de paginación.
+
+> **[Captura: Listado paginado de películas retornando HTTP 200 OK]**
+>
+> ![Listar películas paginado](screenshots/06-listarPeliPaginado.png)
+
+---
+
+### 7. Obtener película por ID (`GET /api/peliculas/{id}`)
+
+Consulta protegida de un registro puntual por su ID (`GET /api/peliculas/1`). Retorna `200 OK` con los datos del recurso solicitado.
+
+> **[Captura: Consulta individual de película por ID retornando HTTP 200 OK]**
+>
+> ![Obtener película por ID](screenshots/07-ObtenerPorID.png)
+
+---
+
+### 8. Actualizar película (`PUT /api/peliculas/{id}`)
+
+Actualización protegida de los campos de una película existente mediante `PUT`, con el DTO validado y el Bearer Token. Retorna `200 OK` reflejando los cambios.
+
+> **[Captura: Actualización de película con método PUT retornando HTTP 200 OK]**
+>
+> ![Actualizar película](screenshots/08-actualizarPeli.png)
+
+---
+
+### 9. Eliminar película (`DELETE /api/peliculas/{id}`)
+
+Eliminación protegida de una película mediante `DELETE /api/peliculas/1` con Bearer Token. Retorna `200 OK` confirmando la eliminación del registro.
+
+> **[Captura: Eliminación de película con método DELETE retornando HTTP 200 OK]**
+>
+> ![Eliminar película](screenshots/09-eliminarPeli.png)
+
+---
+
+## Uso de la Colección de Bruno
+
+1. Abre el cliente **Bruno**.
+2. Selecciona **Open Collection** y abre la carpeta `bruno/` o `Actividad3_CRUD/` ubicada en la raíz de este repositorio.
+3. Selecciona el entorno deseado:
+   - **Local:** `baseUrl = http://localhost:8088`
+   - **VPS:** `baseUrl = http://insectopia.tech:8088`
+4. Ejecuta primero la petición de **Login** o **Registro** para obtener el token JWT.
+5. Copia el token recibido y configúralo en el Auth de la colección como Bearer Token (o en la variable `token`), lo que permitirá consumir automáticamente todos los endpoints protegidos.
+
+---

@@ -1,0 +1,22 @@
+meta {
+  name: 4-Crear-Director
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/directores
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "nombre": "Guillermo del Toro",
+    "nacionalidad": "Mexicana"
+  }
+}
