@@ -129,7 +129,7 @@ Petición al CRUD sin enviar la cabecera `Authorization`. La API rechaza la soli
 
 > **[Captura: Petición sin token rechazada con HTTP 401 Unauthorized]**
 >
-> ![Prueba sin token](screenshots/03-No%20token.png)
+> ![Prueba sin token](screenshots/03-No_token.png)
 
 ---
 
